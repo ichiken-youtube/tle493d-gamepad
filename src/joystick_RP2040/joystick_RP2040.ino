@@ -93,12 +93,12 @@ bool areArraysEqual(uint8_t *arr1, uint8_t *arr2, int n) {
     for (int i = 0; i < n; i++) {
         if (arr1[i] != arr2[i]) {
             // 配列の要素が一致しない場合
-            return false; // 一致しない
+            return false;
         }
     }
 
     // 配列のすべての要素が一致する場合
-    return true; // 一致する
+    return true;
 }
 
 void keyLogShift(uint8_t *kl, uint8_t keyStatus){
@@ -152,25 +152,10 @@ void setup() {
   display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
   display.display();
   delay(2000);
-/*  for(int i=0;i>-8;i--){
-    display.clearDisplay();
-    display.drawBitmap(0,i,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
-    display.display();
-    delay(100);
-  }*/
 
-
-  display.setTextColor(BLACK);  //文字色
-/*  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.println("Preparing the");
-  display.setTextSize(2);
-  display.println("ICHIKEN\n   GAMEPAD");
-  display.display();
-  delay(2000);*/
+  display.setTextColor(BLACK);
   
   display.setTextSize(1);
-  //display.clearDisplay();
   display.setCursor(0, 0);
 
   display.clearDisplay();
