@@ -1,0 +1,6 @@
+~$*
+.theia
+*.kicad_sch.lck
+*.kicad_pcb.lck
+*.log
+~*.tmp
