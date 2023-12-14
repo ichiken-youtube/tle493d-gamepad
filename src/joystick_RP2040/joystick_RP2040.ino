@@ -49,6 +49,10 @@ const int joyPushStroke = 120;
 //ジョイスティックのアソビ
 const int asobi = 200;
 
+//点滅タイマ関連
+repeating_timer_t timer; 
+uint8_t timerBitShift = 1;
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 
 uint8_t const desc_hid_report[] = {
@@ -62,6 +66,13 @@ uint8_t keyLog[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 uint8_t knm[]= {0,6,0,5,0,4,0,3,0,4,0,3,0,2,0,2,0,1,0,1};
 const uint8_t logNum = 20;
 bool secretFlag = false;
+
+bool timer_callback(repeating_timer_t*){
+  float t = ((millis()>>timerBitShift)%360)*PI/180.0;
+  analogWrite(LED_CTRL,  (int)((sin(t)+1)*127));
+
+  return true;
+}
 
 void updateBtn(int *btns, int position, byte value) {
   value == 0 ? *btns &= ~(1 << position) : *btns |= (1 << position);
@@ -141,7 +152,8 @@ void setup() {
   pinMode(BTN_SELECT, INPUT_PULLUP);
 
   pinMode(LED_CTRL, OUTPUT);
-  analogWrite(LED_CTRL, 0);
+
+  add_repeating_timer_ms(10, &timer_callback, NULL, &timer);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     //Serial.println(F("SSD1306 can not allocate memory!"));
@@ -250,14 +262,13 @@ void setup() {
 
   JoyR.calibrate();
   display.println("R:(" + String(JoyR.xRaw) + ", " + String(JoyR.yRaw) + ", " + String(JoyR.zRaw) + ")");
-
-
   display.display();
 
   JoyL.calibrate();
   display.println("L:(" + String(JoyL.xRaw) + ", " + String(JoyL.yRaw) + ", " + String(JoyL.zRaw) + ")");
-
   display.display();
+  cancel_repeating_timer (&timer);
+  analogWrite(LED_CTRL, 0);
   delay(dispStepTime);
 
   display.clearDisplay();
@@ -284,6 +295,8 @@ void setup() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);  //文字色
   display.setTextSize(1);
+
+  timerBitShift = 3;
 
 }
 
@@ -404,8 +417,14 @@ void loop() {
   }
   
   if(areArraysEqual(keyLog, knm, logNum)){
-    secretFlag = !secretFlag;
     keyLogShift(keyLog,99);
+    if(secretFlag){
+      cancel_repeating_timer (&timer);
+      analogWrite(LED_CTRL, 0);
+    }else{
+      add_repeating_timer_ms(50, &timer_callback, NULL, &timer);
+    }
+    secretFlag = !secretFlag;
   }
   
   gp.buttons = (gp.buttons & btnMask) | btnFlag;
@@ -504,10 +523,8 @@ void loop() {
   display.print("Z:"+String(JoyL.z));
 
   if (secretFlag){
-    float t = ((millis()>>2)%360)*PI/180.0;
     display.clearDisplay();
     display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
-    analogWrite(LED_CTRL,  (int)((sin(t)+1)*127));
   }else{
     digitalWrite(LED_CTRL,HIGH);
   }
