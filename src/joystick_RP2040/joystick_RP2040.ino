@@ -23,25 +23,35 @@ https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412
 #define BTN_RIGHT 11
 #define BTN_LEFT 12
 
-#define BTN_L1 6
-#define BTN_L2 7
-#define BTN_R1 9
-#define BTN_R2 8
+#define BTN_L1 3
+#define BTN_L2 2
+#define BTN_R1 0
+#define BTN_R2 1
 
 #define BTN_START 17
 #define BTN_SELECT 16
 
-#define RESET 2
+#define LED_CTRL 6
 
 //画面のサイズの設定
 #define SCREEN_WIDTH (128)
 #define SCREEN_HEIGHT (64)
 
+Tle493d JoyL(TLE493D_A1);
+Tle493d JoyR(TLE493D_A2);
+
 //ジョイスティックを目一杯倒したときの上限下限の絶対値
-const int joyRange = 600;
+const int joyRange = 450;
 
 //ジョイスティック押し込み操作の閾値
 const int joyPushStroke = 120;
+
+//ジョイスティックのアソビ
+const int asobi = 200;
+
+//点滅タイマ関連
+repeating_timer_t timer; 
+uint8_t timerBitShift = 1;
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire);
 
@@ -56,6 +66,13 @@ uint8_t keyLog[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 uint8_t knm[]= {0,6,0,5,0,4,0,3,0,4,0,3,0,2,0,2,0,1,0,1};
 const uint8_t logNum = 20;
 bool secretFlag = false;
+
+bool timer_callback(repeating_timer_t*){
+  float t = ((millis()>>timerBitShift)%360)*PI/180.0;
+  analogWrite(LED_CTRL,  (int)((sin(t)+1)*127));
+
+  return true;
+}
 
 void updateBtn(int *btns, int position, byte value) {
   value == 0 ? *btns &= ~(1 << position) : *btns |= (1 << position);
@@ -112,9 +129,6 @@ void keyLogShift(uint8_t *kl, uint8_t keyStatus){
   return;
 }
 
-Tle493d JoyR(TLE493D_A0);
-Tle493d JoyL(TLE493D_A1);
-
 void setup() {
   int dispStepTime = 200;
 
@@ -137,7 +151,9 @@ void setup() {
   pinMode(BTN_START, INPUT_PULLUP);
   pinMode(BTN_SELECT, INPUT_PULLUP);
 
-  pinMode(RESET, INPUT_PULLUP);
+  pinMode(LED_CTRL, OUTPUT);
+
+  add_repeating_timer_ms(10, &timer_callback, NULL, &timer);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     //Serial.println(F("SSD1306 can not allocate memory!"));
@@ -147,13 +163,25 @@ void setup() {
   TinyUSB_Device_Init(0);
   usb_hid.begin();
 
+  display.setTextColor(WHITE);
   display.clearDisplay();
+  display.setCursor(0, 0);
+  for(int i=0;i<7;i++){
+    display.println(ichiken[i]);
+    display.display();
+    delay(dispStepTime);
+  }
+  
+  delay(1000);
 
+  display.setTextColor(BLACK);
+  display.clearDisplay();
   display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+  display.setCursor(25, 40);
+  display.println("GAMEPAD");
   display.display();
   delay(2000);
 
-  display.setTextColor(BLACK);
   
   display.setTextSize(1);
   display.setCursor(0, 0);
@@ -196,9 +224,10 @@ void setup() {
   display.display();
   delay(dispStepTime);
 
-  display.print("Joyk R:");
+  display.print("Joy R:");
   display.display();
   if(JoyR.begin()){
+    JoyR.asobi = asobi;
     display.println("OK");
     display.display();
   }else{
@@ -210,6 +239,7 @@ void setup() {
   display.print("Joy L:");
   display.display();
   if(JoyL.begin()){
+    JoyL.asobi = asobi;
     display.println("OK");
     display.display();
   }else{
@@ -232,14 +262,13 @@ void setup() {
 
   JoyR.calibrate();
   display.println("R:(" + String(JoyR.xRaw) + ", " + String(JoyR.yRaw) + ", " + String(JoyR.zRaw) + ")");
-
-
   display.display();
 
   JoyL.calibrate();
   display.println("L:(" + String(JoyL.xRaw) + ", " + String(JoyL.yRaw) + ", " + String(JoyL.zRaw) + ")");
-
   display.display();
+  cancel_repeating_timer (&timer);
+  analogWrite(LED_CTRL, 0);
   delay(dispStepTime);
 
   display.clearDisplay();
@@ -247,7 +276,11 @@ void setup() {
   display.setTextSize(2);
   display.println("All\nSystems\nReady!!");
   display.display();
-  delay(1000);
+
+  for(int i=0;i<256;i++){
+    analogWrite(LED_CTRL, i);
+    delay(4);
+  }
 
   gp.x = 0;
   gp.y = 0;
@@ -263,6 +296,8 @@ void setup() {
   display.setTextColor(SSD1306_WHITE);  //文字色
   display.setTextSize(1);
 
+  timerBitShift = 3;
+
 }
 
 
@@ -274,6 +309,8 @@ void loop() {
   const int btnMask = 0b1111111111;
   const int xyab_x = 72;
   const int hatIndicaterWidth = 3;
+  
+
 
   JoyR.update();
   JoyL.update();
@@ -380,8 +417,14 @@ void loop() {
   }
   
   if(areArraysEqual(keyLog, knm, logNum)){
-    secretFlag = !secretFlag;
     keyLogShift(keyLog,99);
+    if(secretFlag){
+      cancel_repeating_timer (&timer);
+      analogWrite(LED_CTRL, 0);
+    }else{
+      add_repeating_timer_ms(50, &timer_callback, NULL, &timer);
+    }
+    secretFlag = !secretFlag;
   }
   
   gp.buttons = (gp.buttons & btnMask) | btnFlag;
@@ -481,10 +524,9 @@ void loop() {
 
   if (secretFlag){
     display.clearDisplay();
-    display.drawBitmap(
-      0,
-      0,
-      secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+    display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+  }else{
+    digitalWrite(LED_CTRL,HIGH);
   }
 
   display.display();

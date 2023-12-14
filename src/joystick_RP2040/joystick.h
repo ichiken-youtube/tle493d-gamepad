@@ -20,6 +20,7 @@ class Tle493d{
     void update();
     void calibrate();
     bool pole;
+    int asobi;
 
   private:
     TypeAddress_e address;
@@ -29,18 +30,19 @@ class Tle493d{
     int xOffset;
     int yOffset;
     int zOffset;
-    int asobiRange;
     void resetSenser();
     bool configSenser();
-    int asobi(int axis);
+    int asobiAdj(int axis);
 };
 
-Tle493d::Tle493d(TypeAddress_e addr):
-  x(0),y(0),z(0),r(0),
-  xRaw(0),yRaw(0),zRaw(0),pole(true),
-  xPrev(0),yPrev(0),zPrev(0),
-  xOffset(0),yOffset(0),zOffset(0),address(addr){
-    asobiRange = 300;
+Tle493d::Tle493d(TypeAddress_e addr){
+    x=0;y=0;z=0;r=0;
+    xRaw=0;yRaw=0;zRaw=0;
+    pole=true;
+    xPrev=0;yPrev=0;zPrev=0;
+    xOffset=0;yOffset=0;zOffset=0;
+    address = addr;
+    asobi = 200;
 }
 
 Tle493d::~Tle493d(){
@@ -131,12 +133,12 @@ bool Tle493d::configSenser(){
   }
 }
 
-int Tle493d::asobi(int axis){
+int Tle493d::asobiAdj(int axis){
   int axisAdj;
-  if(r < asobiRange/2){
+  if(r < asobi/2){
     axisAdj = 0;
-  }else if(r < asobiRange){
-    axisAdj = axis * (2 - asobiRange/r);
+  }else if(r < asobi){
+    axisAdj = axis * (2 - asobi/r);
   }
   return axisAdj;
 }
@@ -174,10 +176,10 @@ void Tle493d::update(){
   xPrev = x;
   yPrev = y;
   zPrev = z;
-  if (r < asobiRange){//アソビの範囲内なら
-    lpf = 0.2 + 0.8*(r/(float)asobiRange);//中心に近いほどLPFが強くかかる
-    x = (int)(xPrev*(1-lpf) + asobi(xRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
-    y = (int)(yPrev*(1-lpf) + asobi(yRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
+  if (r < asobi){//アソビの範囲内なら
+    lpf = 0.2 + 0.8*(r/(float)asobi);//中心に近いほどLPFが強くかかる
+    x = (int)(xPrev*(1-lpf) + asobiAdj(xRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
+    y = (int)(yPrev*(1-lpf) + asobiAdj(yRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
     //x = (int)(xRaw * adj);
   }else{
     x = xRaw;
@@ -254,3 +256,5 @@ const unsigned char secret[] PROGMEM = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
+
+const char* ichiken[] = {"Intuitive","Controller with","Hall-sensor","Interface","Kit for","Enhanced","Navigation"};
