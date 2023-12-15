@@ -305,6 +305,7 @@ void loop() {
   int rxd,ryd,rzd,lxd,lyd,lzd;
   int btnFlag = 0b00000000;
   int hatFlag = 0b00000000;
+  static int mashFlag = 0b0000;
 
   const int btnMask = 0b1111111111;
   const int xyab_x = 72;
@@ -321,23 +322,39 @@ void loop() {
   //-----------------------------XYAB-----------------------------
   if (checkBtn(&gp, BTN_X, 0)) {
     display.setCursor(xyab_x, 0);
+    if(mashFlag & 0b0001){
+      display.setTextColor(BLACK, WHITE);
+    }
     display.print("X");
+    display.setTextColor(WHITE);
   }
 
   if (checkBtn(&gp, BTN_Y, 3)) {
     display.setCursor(xyab_x + 8, 0);
+    if(mashFlag & 0b1000){
+      display.setTextColor(BLACK, WHITE);
+    }
     display.print("Y");
+    display.setTextColor(WHITE);
   }
 
   if (checkBtn(&gp, BTN_A, 1)) {
     display.setCursor(xyab_x + 8*2, 0);
+    if(mashFlag & 0b0010){
+      display.setTextColor(BLACK, WHITE);
+    }
     display.print("A");
+    display.setTextColor(WHITE);
     keyLogShift(keyLog,6);
   }
 
   if (checkBtn(&gp, BTN_B, 2)) {
     display.setCursor(xyab_x + 8*3, 0);
+    if(mashFlag & 0b0100){
+      display.setTextColor(BLACK, WHITE);
+    }
     display.print("B");
+    display.setTextColor(WHITE);
     keyLogShift(keyLog,5);
   }
 
@@ -415,12 +432,19 @@ void loop() {
     display.setCursor(58, 48);
     display.print("SL");
   }
+
+  if ((gp.buttons>>8 & 0b11) == 0b11) {
+    display.setCursor(58, 40);
+    display.print("MS");
+    mashFlag = gp.buttons & 0b1111;
+  }
   
+  //キーログチェック
   if(areArraysEqual(keyLog, knm, logNum)){
     keyLogShift(keyLog,99);
     if(secretFlag){
       cancel_repeating_timer (&timer);
-      analogWrite(LED_CTRL, 0);
+      digitalWrite(LED_CTRL,HIGH);
     }else{
       add_repeating_timer_ms(50, &timer_callback, NULL, &timer);
     }
@@ -431,8 +455,13 @@ void loop() {
 
   gp.hat = checkHat(hatFlag);
 
+  //ボタンが何も押されていなければ、無入力をキーログに記録
   if(hatFlag == 0 && gp.buttons == 0){
     keyLogShift(keyLog,0);
+  }
+
+  if((millis()>>3)%2){
+    gp.buttons = gp.buttons & (0b1111110000 | ~mashFlag);
   }
 
   gp.x = (int8_t)(map(constrain(JoyL.x, -joyRange, joyRange), -joyRange, joyRange, -127, 127));
