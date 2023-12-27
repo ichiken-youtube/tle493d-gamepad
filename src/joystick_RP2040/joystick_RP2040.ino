@@ -37,6 +37,8 @@ https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412
 #define SCREEN_WIDTH (128)
 #define SCREEN_HEIGHT (64)
 
+//左右のジョイスティックそれぞれに使われているセンサの指定
+//配布版は左A1,右A2のはず
 Tle493d JoyL(TLE493D_A1);
 Tle493d JoyR(TLE493D_A2);
 
@@ -49,7 +51,7 @@ const int joyPushStroke = 120;
 //ジョイスティックのアソビ
 const int asobi = 200;
 
-//点滅タイマ関連
+//明滅タイマ関連
 repeating_timer_t timer; 
 uint8_t timerBitShift = 1;
 
@@ -67,6 +69,7 @@ uint8_t knm[]= {0,6,0,5,0,4,0,3,0,4,0,3,0,2,0,2,0,1,0,1};
 const uint8_t logNum = 20;
 bool secretFlag = false;
 
+//タイマ割込みで呼ばれる関数
 bool timer_callback(repeating_timer_t*){
   float t = ((millis()>>timerBitShift)%360)*PI/180.0;
   analogWrite(LED_CTRL,  (int)((sin(t)+1)*127));
@@ -74,10 +77,13 @@ bool timer_callback(repeating_timer_t*){
   return true;
 }
 
+//ボタンの状態を表す変数btnsの指定のbitにボタンの状態を書き込む。
 void updateBtn(int *btns, int position, byte value) {
   value == 0 ? *btns &= ~(1 << position) : *btns |= (1 << position);
 }
 
+
+//指定のピン番号のボタンの状態を確認して、構造体gpに書き込み。
 bool checkBtn(hid_gamepad_report_t *gp, uint8_t port, uint8_t position){
   if (digitalRead(port) == LOW) {
     gp->buttons |= (1 << position);
@@ -88,6 +94,7 @@ bool checkBtn(hid_gamepad_report_t *gp, uint8_t port, uint8_t position){
   }
 }
 
+//ハットスイッチの状態確認。同時押し斜め入力の判定など。
 uint8_t checkHat(uint8_t btns){
   uint8_t temp = btns;
   uint8_t hat=0;
@@ -106,6 +113,7 @@ uint8_t checkHat(uint8_t btns){
   return hat;
 }
 
+//配列を比較して、それが一致しているか確認する。
 bool areArraysEqual(uint8_t *arr1, uint8_t *arr2, int n) {
     for (int i = 0; i < n; i++) {
         if (arr1[i] != arr2[i]) {
@@ -118,6 +126,8 @@ bool areArraysEqual(uint8_t *arr1, uint8_t *arr2, int n) {
     return true;
 }
 
+/*押されているキーのログを記録する配列に、新規の値を書き込む。
+既存の値は後方にシフトし、古いものから破棄。*/
 void keyLogShift(uint8_t *kl, uint8_t keyStatus){
   if (kl[0] == keyStatus){
     return;
@@ -130,6 +140,7 @@ void keyLogShift(uint8_t *kl, uint8_t keyStatus){
 }
 
 void setup() {
+  //起動ログ表示の持続時間
   int dispStepTime = 200;
 
   pinMode(BTN_X, INPUT_PULLUP);
@@ -153,16 +164,22 @@ void setup() {
 
   pinMode(LED_CTRL, OUTPUT);
 
+  //タイマ割込み
   add_repeating_timer_ms(10, &timer_callback, NULL, &timer);
 
+  /*アドレス指定してディスプレイ起動。
+  電源繋いでも何も表示されない場合、ディスプレイの起動に失敗している(はんだ付け不良による接触不良が多い)か、あるいはHIDとしての通信確立に失敗している。*/
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
     //Serial.println(F("SSD1306 can not allocate memory!"));
     return;
   }
 
+  /*HIDとしてPCと通信確立する。
+  Windows PC以外での動作は未確認*/
   TinyUSB_Device_Init(0);
   usb_hid.begin();
 
+  //オープニング演出
   display.setTextColor(WHITE);
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -207,13 +224,15 @@ void setup() {
 
   Wire.begin();
   Wire.setClock(400000);
+  /*Wireのセットアップメソッドに戻り値が無いので、成功/失敗の判定ができない。
+  ほぼ確実にOK表示になる。*/
   display.println("I2C:OK");
   display.display();
   delay(dispStepTime);
 
   display.print("TinyUSB:");
   display.display();
-  // wait until device mounted
+  /*PC以外のものに接続された場合、ここで止まることが多い。*/
   while (!TinyUSBDevice.mounted());
   display.println("OK");
 
@@ -224,6 +243,7 @@ void setup() {
   display.display();
   delay(dispStepTime);
 
+  /*右センサ通信開始。接続ヨイカ？*/
   display.print("Joy R:");
   display.display();
   if(JoyR.begin()){
@@ -236,6 +256,7 @@ void setup() {
     while(1);
   }
 
+  /*左センサ通信開始。接続ヨイカ？*/
   display.print("Joy L:");
   display.display();
   if(JoyL.begin()){
@@ -253,6 +274,8 @@ void setup() {
   display.setCursor(0, 0);
   display.setTextColor(WHITE);
 
+  /*左右センサのキャリブレーション。
+  触れられていない状態の数値を記録したり、磁石の極の向きを記録したりする*/
   display.setTextSize(2);
   display.println("HANDS OFF");
   display.setTextSize(1);
@@ -312,7 +335,7 @@ void loop() {
   const int hatIndicaterWidth = 3;
   
 
-
+  //左右センサ状態更新
   JoyR.update();
   JoyL.update();
   
@@ -460,6 +483,7 @@ void loop() {
     keyLogShift(keyLog,0);
   }
 
+  /*自動連打フラグが有効のボタンは、8msおきに入力を無効にする*/
   if((millis()>>3)%2){
     gp.buttons = gp.buttons & (0b1111110000 | ~mashFlag);
   }
