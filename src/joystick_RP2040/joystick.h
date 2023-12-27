@@ -1,3 +1,4 @@
+//各型番ごとのI2Cアドレス
 enum TypeAddress_e{
   TLE493D_A0 = 0x35,
   TLE493D_A1 = 0x22,
@@ -35,27 +36,31 @@ class Tle493d{
     int asobiAdj(int axis);
 };
 
+/*コンストラクション
+変数の初期化が多いのでこの方が読みやすい*/
 Tle493d::Tle493d(TypeAddress_e addr){
-    x=0;y=0;z=0;r=0;
-    xRaw=0;yRaw=0;zRaw=0;
-    pole=true;
-    xPrev=0;yPrev=0;zPrev=0;
-    xOffset=0;yOffset=0;zOffset=0;
-    address = addr;
-    asobi = 200;
+  x=0;y=0;z=0;r=0;
+  xRaw=0;yRaw=0;zRaw=0;
+  pole=true;
+  xPrev=0;yPrev=0;zPrev=0;
+  xOffset=0;yOffset=0;zOffset=0;
+  address = addr;
+  asobi = 200;
 }
 
 Tle493d::~Tle493d(){
 }
 
+//必ずWire.begin();の後である必要がある。
 bool Tle493d::begin(){
-  //必ずWire.begin();の後
   bool result;
+  //基本的にアドレス書き換えなどしていないけど念のためリセット
   resetSenser();
   result = configSenser();
   return result;
 }
 
+//初期状態(手が触れていない状態の値と磁石の極の向き)を記録しておく
 void Tle493d::calibrate(){
   uint8_t data[6];
   Wire.requestFrom(address,6);
@@ -74,6 +79,7 @@ void Tle493d::calibrate(){
   z=0;
 }
 
+/*センサにリセットシグナルを送る。*/
 void Tle493d::resetSenser(){
   Wire.beginTransmission(address);
   Wire.write(0xFF);
@@ -90,18 +96,13 @@ void Tle493d::resetSenser(){
   delayMicroseconds(50);
 }
 
+/*センサのアドレス部分しか書き換えていないので、パリティビットは決め打ち
+アドレスはデフォルトから変更ないけど念のため*/
 bool Tle493d::configSenser(){
   byte error;
   uint8_t config = 0b00101000;
-  // config register 0x10
-  // ADC trigger on read after register 0x05
-  // short-range sensitivity
   uint8_t mod1 = 0b00010101;
-  // mode register 0x11
-  // 1-byte read protocol
-  // interrupt disabled
-  // master controlled mode
-  
+
   //[7]parity[6:5]IICAdr
   switch (address)
   {
@@ -120,7 +121,6 @@ bool Tle493d::configSenser(){
       break;
   }
 
-  //Serial.println(mod1,BIN);
   Wire.beginTransmission(address);
   Wire.write(0x10);
   Wire.write(config);
@@ -133,6 +133,7 @@ bool Tle493d::configSenser(){
   }
 }
 
+/*アソビ範囲内にある値の補正*/
 int Tle493d::asobiAdj(int axis){
   int axisAdj;
   if(r < asobi/2){
@@ -143,6 +144,7 @@ int Tle493d::asobiAdj(int axis){
   return axisAdj;
 }
 
+/*状態更新*/
 void Tle493d::update(){
   uint8_t data[6];
   int transformedData1[3];
@@ -185,11 +187,10 @@ void Tle493d::update(){
     x = xRaw;
     y = yRaw;
   }
-  //x = transformedData1[0]-xOffset;
-  //y = transformedData1[1]-yOffset;
   z = (int)(zPrev*0.7 + (zRaw-zOffset)*0.3);
 }
 
+//謎のビットマップ
 const unsigned char secret[] PROGMEM = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
@@ -257,4 +258,5 @@ const unsigned char secret[] PROGMEM = {
 	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
 };
 
+//オープニング演出時の文字列
 const char* ichiken[] = {"Intuitive","Controller with","Hall-sensor","Interface","Kit for","Enhanced","Navigation"};
