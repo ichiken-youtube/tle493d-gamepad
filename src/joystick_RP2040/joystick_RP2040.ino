@@ -43,13 +43,13 @@ Tle493d JoyL(TLE493D_A1);
 Tle493d JoyR(TLE493D_A2);
 
 //ジョイスティックを目一杯倒したときの上限下限の絶対値
-const int joyRange = 450;
+const int joyRange = 300;
 
 //ジョイスティック押し込み操作の閾値
 const int joyPushStroke = 120;
 
 //ジョイスティックのアソビ
-const int asobi = 200;
+const int asobi = 150;
 
 //明滅タイマ関連
 repeating_timer_t timer; 
