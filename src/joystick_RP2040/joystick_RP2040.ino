@@ -404,13 +404,13 @@ void loop() {
   }
 
   //-----------------------------ジョイスティック押し込み-----------------------------
-  if (JoyR.z > joyPushStroke) {
+  if (JoyR.z > -1.0/1100*pow(JoyR.r,2)+joyPushStroke) {//joyPushStroke
     updateBtn(&btnFlag, 11, 1);
   } else {
     updateBtn(&btnFlag, 11, 0);
   }
 
-  if (JoyL.z > joyPushStroke) {
+  if (JoyL.z > -1.0/1100*pow(JoyL.r,2)+joyPushStroke) {
     updateBtn(&btnFlag, 10, 1);
   } else {
     updateBtn(&btnFlag, 10, 0);
