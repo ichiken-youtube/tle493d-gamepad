@@ -13,7 +13,7 @@ class Tle493d{
     int x;
     int y;
     int z;
-    int r;
+    float r;
     int xRaw;
     int yRaw;
     int zRaw;
@@ -174,12 +174,12 @@ void Tle493d::update(){
     zRaw = transformedData1[2];
   }
     
-  r = (int)sqrt(pow(xRaw,2) + pow(yRaw,2));
+  r = sqrt(pow(xRaw,2) + pow(yRaw,2));
   xPrev = x;
   yPrev = y;
   zPrev = z;
-  if (r < asobi){//アソビの範囲内なら
-    lpf = 0.2 + 0.8*(r/(float)asobi);//中心に近いほどLPFが強くかかる
+  if (r < (float)asobi){//アソビの範囲内なら
+    lpf = 0.2 + 0.8*(r/asobi);//中心に近いほどLPFが強くかかる
     x = (int)(xPrev*(1-lpf) + asobiAdj(xRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
     y = (int)(yPrev*(1-lpf) + asobiAdj(yRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
     //x = (int)(xRaw * adj);
