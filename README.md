@@ -14,3 +14,7 @@ RP2040(RaspberryPi Pico)と、Infineon製ホールセンサTLE493D-P2B6を使用
 
 ## 参考
 [TLE493D-3DMagnetic-Sensor](https://github.com/Infineon/TLE493D-3DMagnetic-Sensor)
+
+## ライセンス
+本ソフトウェアおよび関連するハードウェア設計はMITライセンスの下で公開されています。  
+[LICENSE](./LICENSE)をご覧下さい。
