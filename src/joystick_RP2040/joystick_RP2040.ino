@@ -49,7 +49,8 @@ const int joyRange = 300;
 const int joyPushStroke = 120;
 
 //ジョイスティックのアソビ
-const int asobi = 150;
+//この1/2がデッドゾーンになる
+const int asobi = 180;
 
 //明滅タイマ関連
 repeating_timer_t timer; 
@@ -65,9 +66,9 @@ hid_gamepad_report_t gp;
 
 
 uint8_t keyLog[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-uint8_t knm[]= {0,6,0,5,0,4,0,3,0,4,0,3,0,2,0,2,0,1,0,1};
+uint8_t knm[]= {0,6,0,5,0,4,0,3,0,4,0,3,0,2,0,2,0,1,0,1};//謎の配列
 const uint8_t logNum = 20;
-bool secretFlag = false;
+bool secretFlag = false;//謎のフラグ
 
 //タイマ割込みで呼ばれる関数
 bool timer_callback(repeating_timer_t*){
@@ -404,7 +405,8 @@ void loop() {
   }
 
   //-----------------------------ジョイスティック押し込み-----------------------------
-  if (JoyR.z > -1.0/1100*pow(JoyR.r,2)+joyPushStroke) {//joyPushStroke
+  //XY入力範囲端にいくほどZ押し込みの閾値が下がる二次関数
+  if (JoyR.z > -1.0/1100*pow(JoyR.r,2)+joyPushStroke) {
     updateBtn(&btnFlag, 11, 1);
   } else {
     updateBtn(&btnFlag, 11, 0);
@@ -483,8 +485,8 @@ void loop() {
     keyLogShift(keyLog,0);
   }
 
-  /*自動連打フラグが有効のボタンは、8msおきに入力を無効にする*/
-  if((millis()>>3)%2){
+  /*自動連打フラグが有効のボタンは、2^5=32msおきに入力/無効を切り替える*/
+  if((millis()>>5)%2){
     gp.buttons = gp.buttons & (0b1111110000 | ~mashFlag);
   }
 
