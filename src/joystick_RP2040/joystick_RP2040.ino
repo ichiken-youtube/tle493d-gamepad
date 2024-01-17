@@ -34,8 +34,8 @@ https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412
 #define LED_CTRL 6
 
 //画面のサイズの設定
-#define SCREEN_WIDTH (128)
-#define SCREEN_HEIGHT (64)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
 
 //左右のジョイスティックそれぞれに使われているセンサの指定
 //配布版は左A1,右A2のはず
@@ -72,6 +72,7 @@ bool secretFlag = false;//謎のフラグ
 
 //タイマ割込みで呼ばれる関数
 bool timer_callback(repeating_timer_t*){
+  //時刻から正弦波を作ってLEDを明滅
   float t = ((millis()>>timerBitShift)%360)*PI/180.0;
   analogWrite(LED_CTRL,  (int)((sin(t)+1)*127));
 
@@ -458,9 +459,11 @@ void loop() {
     display.print("SL");
   }
 
+  //Start,Slect同時押しされている場合
   if ((gp.buttons>>8 & 0b11) == 0b11) {
     display.setCursor(58, 40);
     display.print("MS");
+    //自動連打フラグにその時押しているボタンを追加
     mashFlag = gp.buttons & 0b1111;
   }
   
@@ -512,6 +515,7 @@ void loop() {
   display.fillRect(0, 8, 55, 55, WHITE);
   display.fillRect(72, 8, 55, 55, WHITE);
   
+  //ハット入力マーカ表示
   switch (gp.hat){
     case 1:
       display.fillRect(18, 8, 18, 18, BLACK);

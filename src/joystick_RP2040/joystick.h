@@ -182,7 +182,6 @@ void Tle493d::update(){
     lpf = 0.2 + 0.8*(r/asobi);//中心に近いほどLPFが強くかかる
     x = (int)(xPrev*(1-lpf) + asobiAdj(xRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
     y = (int)(yPrev*(1-lpf) + asobiAdj(yRaw)*lpf);//LPFに加え、0に近いほど0に向かおうとする
-    //x = (int)(xRaw * adj);
   }else{
     x = xRaw;
     y = yRaw;
