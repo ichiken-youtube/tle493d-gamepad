@@ -1,6 +1,6 @@
 /*
 Infineon謹製ライブラリ(https://github.com/Infineon/TLE493D-3DMagnetic-Sensor)
-で複数センサ使った場合の挙動がおかしいので、センサとのI2C通信部分はArduino標準ライブラリのみで記述しています。
+でA0以外のセンサ使った場合の挙動がおかしいので、センサとのI2C通信部分はArduino標準ライブラリのみで記述しています。
 参考
 https://fabacademy.org/2022/labs/charlotte/students/alaric-pan/assignments/week13/
 https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412.ino
