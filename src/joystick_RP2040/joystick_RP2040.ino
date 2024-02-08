@@ -32,6 +32,7 @@ https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412
 #define BTN_SELECT 16
 
 #define LED_CTRL 6
+#define SELECT_DEMOMODE 9
 
 //画面のサイズの設定
 #define SCREEN_WIDTH 128
@@ -165,6 +166,7 @@ void setup() {
   pinMode(BTN_SELECT, INPUT_PULLUP);
 
   pinMode(LED_CTRL, OUTPUT);
+  pinMode(SELECT_DEMOMODE, INPUT_PULLUP);
 
   //タイマ割込み
   add_repeating_timer_ms(10, &timer_callback, NULL, &timer);
@@ -252,14 +254,24 @@ void setup() {
 
   display.print("TinyUSB:");
   display.display();
-  /*PC以外のものに接続された場合、ここで止まることが多い。*/
-  while (!TinyUSBDevice.mounted());
-  display.println("OK");
+  /*PC以外のものに接続された場合、ここで止まることが多い。
+  デモモードの場合はスキップ*/
+  if(digitalRead(SELECT_DEMOMODE)){
+    while (!TinyUSBDevice.mounted());
+    display.println("OK");
+  }else{
+    display.println("SKIP");
+  }
+  display.display();
 
   display.print("HID:");
   display.display();
-  while (!usb_hid.ready());
-  display.println("OK");
+  if(digitalRead(SELECT_DEMOMODE)){
+    while (!usb_hid.ready());
+    display.println("OK");
+  }else{
+    display.println("SKIP");
+  }
   display.display();
   delay(dispStepTime);
 
