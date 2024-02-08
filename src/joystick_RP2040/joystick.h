@@ -258,4 +258,4 @@ const unsigned char secret[] PROGMEM = {
 };
 
 //オープニング演出時の文字列
-const char* ichiken[] = {"Intuitive","Controller with","Hall-sensor","Interface","Kit for","Enhanced","Navigation"};
+char ichiken[][20] = {"Intuitive","Controller with","Hall-sensor","Interface","Kit for","Enhanced","Navigation"};

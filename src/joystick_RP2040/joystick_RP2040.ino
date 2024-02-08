@@ -182,22 +182,40 @@ void setup() {
   usb_hid.begin();
 
   //オープニング演出
-  display.setTextColor(WHITE);
   display.clearDisplay();
-  display.setCursor(0, 0);
-  for(int i=0;i<7;i++){
+  for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
+    display.setTextColor(WHITE);
+    display.setCursor(2, i*8);
     display.println(ichiken[i]);
+    display.setTextColor(BLACK, WHITE);
+    display.setCursor(0, i*8);
+    display.println(ichiken[i][0]);
+  }
+  display.display();
+  delay(1000);
+  display.setTextColor(WHITE, BLACK);
+  for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
+    display.fillRect(0, i*8, SCREEN_WIDTH, 8, BLACK);
+    display.setCursor(0, i*8);
+    display.print(ichiken[i][0]);
+    for(int j=1; j<20; j++){
+      display.setCursor(j*6+2, i*8);
+      display.print((ichiken[i][j] >= 'a' && ichiken[i][j] <= 'z') ? (char)(ichiken[i][j] - 'a' + 'A') : ichiken[i][j]);
+    }
     display.display();
     delay(dispStepTime);
   }
-  
-  delay(1000);
+  delay(dispStepTime);
 
   display.setTextColor(BLACK);
   display.clearDisplay();
   display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
   display.setCursor(25, 40);
   display.println("GAMEPAD");
+  if(!digitalRead(SELECT_DEMOMODE)){
+    display.setCursor(0, 56);
+    display.println("DEMO MODE");
+  }
   display.display();
   delay(2000);
 
