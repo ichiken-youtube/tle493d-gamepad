@@ -185,12 +185,13 @@ void setup() {
 
   //オープニング演出
   display.clearDisplay();
+  display.fillRect(0, 0, 8, sizeof(ichiken)/(sizeof(char)*20)*8, WHITE);
   for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
     display.setTextColor(WHITE);
     display.setCursor(2, i*8);
     display.println(ichiken[i]);
     display.setTextColor(BLACK, WHITE);
-    display.setCursor(0, i*8);
+    display.setCursor(1, i*8);
     display.println(ichiken[i][0]);
   }
   display.display();
@@ -198,7 +199,7 @@ void setup() {
   display.setTextColor(WHITE, BLACK);
   for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
     display.fillRect(0, i*8, SCREEN_WIDTH, 8, BLACK);
-    display.setCursor(0, i*8);
+    display.setCursor(1, i*8);
     display.print(ichiken[i][0]);
     for(int j=1; j<20; j++){
       display.setCursor(j*6+2, i*8);
