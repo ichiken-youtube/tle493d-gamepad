@@ -1,7 +1,9 @@
 /*
 Infineon謹製ライブラリ(https://github.com/Infineon/TLE493D-3DMagnetic-Sensor)
 でA0以外のセンサ使った場合の挙動がおかしいので、センサとのI2C通信部分はArduino標準ライブラリのみで記述しています。
-参考
+詳細はイチケンのブログ記事を参照してください。
+https://ichiken-engineering.com/3d_hallsensor_gamepad/
+参考にした記事など
 https://fabacademy.org/2022/labs/charlotte/students/alaric-pan/assignments/week13/
 https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412.ino
 */
@@ -143,6 +145,7 @@ void keyLogShift(uint8_t *kl, uint8_t keyStatus){
 }
 
 void setup() {
+  /*-----------------------------初期化処理-----------------------------*/
   //起動ログ表示の持続時間
   int dispStepTime = 200;
 
@@ -183,7 +186,7 @@ void setup() {
   TinyUSB_Device_Init(0);
   usb_hid.begin();
 
-  //オープニング演出
+  /*-----------------------------どこかで見たことのあるオープニング演出-----------------------------*/
   display.clearDisplay();
   display.fillRect(0, 0, 8, sizeof(ichiken)/(sizeof(char)*20)*8, WHITE);
   for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
@@ -222,7 +225,7 @@ void setup() {
   display.display();
   delay(2000);
 
-  
+  /*-----------------------------起動チェックシーケンス-----------------------------*/
   display.setTextSize(1);
   display.setCursor(0, 0);
 
@@ -256,7 +259,7 @@ void setup() {
   display.print("TinyUSB:");
   display.display();
   /*PC以外のものに接続された場合、ここで止まることが多い。
-  デモモードの場合はスキップ*/
+  デモモードの場合はスキップ(Ver1.1以降)*/
   if(digitalRead(SELECT_DEMOMODE)){
     while (!TinyUSBDevice.mounted());
     display.println("OK");
@@ -303,6 +306,7 @@ void setup() {
   }
   delay(dispStepTime);
 
+  /*-----------------------------キャリブレーション-----------------------------*/
   display.clearDisplay();
   display.setCursor(0, 0);
   display.setTextColor(WHITE);
@@ -333,6 +337,7 @@ void setup() {
   display.println("All\nSystems\nReady!!");
   display.display();
 
+  /*-----------------------------起動完了。定常状態に移行するための初期化処理-----------------------------*/
   for(int i=0;i<256;i++){
     analogWrite(LED_CTRL, i);
     delay(4);
@@ -364,7 +369,7 @@ void loop() {
   static int mashFlag = 0b0000;
 
   const int btnMask = 0b1111111111;
-  const int xyab_x = 72;
+  const int xyab_x = 72;//xyabのインジケータを表示するX座標
   const int hatIndicaterWidth = 3;
   
 
@@ -375,7 +380,7 @@ void loop() {
   display.clearDisplay();
   display.setTextColor(WHITE);
 
-  //-----------------------------XYAB-----------------------------
+  /*-----------------------------XYAB-----------------------------*/
   if (checkBtn(&gp, BTN_X, 0)) {
     display.setCursor(xyab_x, 0);
     if(mashFlag & 0b0001){
@@ -414,8 +419,7 @@ void loop() {
     keyLogShift(keyLog,5);
   }
 
-  //-----------------------------LR-----------------------------
-
+  /*-----------------------------LR-----------------------------*/
   if (checkBtn(&gp, BTN_L1, 4)) {
     display.setCursor(0, 0);
     display.print("L1");
@@ -436,7 +440,7 @@ void loop() {
     display.print("R2");
   }
 
-  //-----------------------------ジョイスティック押し込み-----------------------------
+  /*-----------------------------ジョイスティック押し込み-----------------------------*/
   //XY入力範囲端にいくほどZ押し込みの閾値が下がる二次関数
   if (JoyR.z > -1.0/1100*pow(JoyR.r,2)+joyPushStroke) {
     updateBtn(&btnFlag, 11, 1);
@@ -450,7 +454,7 @@ void loop() {
     updateBtn(&btnFlag, 10, 0);
   }
 
-  //-----------------------------Hat-----------------------------
+  /*-----------------------------Hat-----------------------------*/
   if (digitalRead(BTN_UP) == LOW) {
     updateBtn(&hatFlag, 0, 1);
     keyLogShift(keyLog,1);
@@ -479,7 +483,7 @@ void loop() {
     updateBtn(&hatFlag, 3, 0);
   }
 
-  //-----------------------------Start Select-----------------------------
+  /*-----------------------------Start Select-----------------------------*/
   if (checkBtn(&gp, BTN_START, 9)) {
     display.setCursor(58, 56);
     display.print("ST");
@@ -613,8 +617,11 @@ void loop() {
   display.print("Z:"+String(JoyL.z));
 
   if (secretFlag){
+    int bmpXShift = map(JoyL.x, -joyRange, joyRange, -10, 10) ;
+    int bmpYShift = map(JoyL.y, -joyRange, joyRange, -10, 10) ;
+    timerBitShift = map(constrain(JoyR.y, -joyRange, joyRange), -joyRange, joyRange, 0, 4) ;
     display.clearDisplay();
-    display.drawBitmap(0,0,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
+    display.drawBitmap(0+bmpXShift,0+bmpYShift,secret, SCREEN_WIDTH, SCREEN_HEIGHT, 1);
   }else{
     digitalWrite(LED_CTRL,HIGH);
   }
