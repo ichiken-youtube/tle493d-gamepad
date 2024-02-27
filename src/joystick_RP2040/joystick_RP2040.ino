@@ -40,6 +40,8 @@ https://academy.cba.mit.edu/classes/input_devices/mag/TLE493D/hello.TLE493D.t412
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 
+bool DEMO_MODE = false;
+
 //左右のジョイスティックそれぞれに使われているセンサの指定
 //配布版は左A1,右A2のはず
 Tle493d JoyL(TLE493D_A1);
@@ -186,32 +188,34 @@ void setup() {
   TinyUSB_Device_Init(0);
   usb_hid.begin();
 
-  /*-----------------------------どこかで見たことのあるオープニング演出-----------------------------*/
+  if(!digitalRead(SELECT_DEMOMODE)){
+    DEMO_MODE = true;
+  }
+
+  /*-----------------------------オープニング演出-----------------------------*/
   display.clearDisplay();
-  display.fillRect(0, 0, 8, sizeof(ichiken)/(sizeof(char)*20)*8, WHITE);
+  display.setTextColor(WHITE);
   for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
-    display.setTextColor(WHITE);
-    display.setCursor(2, i*8);
-    display.println(ichiken[i]);
     display.setTextColor(BLACK, WHITE);
+    display.fillRect(0, i*8, 8, 8, WHITE);
     display.setCursor(1, i*8);
-    display.println(ichiken[i][0]);
+    display.print(ichiken[i][0]);
+    display.setTextColor(WHITE);
+    for(int j=1; j<20; j++){
+      display.setCursor(j*6+2, i*8);
+      display.print(ichiken[i][j]);
+    }
   }
   display.display();
   delay(1000);
-  display.setTextColor(WHITE, BLACK);
+  display.setTextColor(WHITE);
   for(int i=0; i<sizeof(ichiken)/(sizeof(char)*20); i++){
-    display.fillRect(0, i*8, SCREEN_WIDTH, 8, BLACK);
+    display.fillRect(0, i*8, 8, 8, BLACK);
     display.setCursor(1, i*8);
-    display.print(ichiken[i][0]);
-    for(int j=1; j<20; j++){
-      display.setCursor(j*6+2, i*8);
-      display.print((ichiken[i][j] >= 'a' && ichiken[i][j] <= 'z') ? (char)(ichiken[i][j] - 'a' + 'A') : ichiken[i][j]);
-    }
+    display.println(ichiken[i][0]);
     display.display();
     delay(dispStepTime);
   }
-  delay(dispStepTime);
 
   display.setTextColor(BLACK);
   display.clearDisplay();
@@ -260,7 +264,7 @@ void setup() {
   display.display();
   /*PC以外のものに接続された場合、ここで止まることが多い。
   デモモードの場合はスキップ(Ver1.1以降)*/
-  if(digitalRead(SELECT_DEMOMODE)){
+  if(!DEMO_MODE){
     while (!TinyUSBDevice.mounted());
     display.println("OK");
   }else{
@@ -270,7 +274,7 @@ void setup() {
 
   display.print("HID:");
   display.display();
-  if(digitalRead(SELECT_DEMOMODE)){
+  if(!DEMO_MODE){
     while (!usb_hid.ready());
     display.println("OK");
   }else{
